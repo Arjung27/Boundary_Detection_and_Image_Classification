@@ -72,6 +72,9 @@ def gaussian_first_derivative(scale, rotated_points, kernel_length):
 	gaussian_x = (1/np.sqrt(2*np.pi*var_x))*(np.exp((-1*(x-mean)**2)/(2*var_x)))
 	gaussian_y = (1/np.sqrt(2*np.pi*var_y))*(np.exp((-1*(y-mean)**2)/(2*var_y)))
 	first_derivative_x = -gaussian_x*((x-mean)/(var_x))
+	# Gaussian can be denoted using the convolution of gaussian in x with 
+	# gaussian in y. Thus, using theory of convolution here d(x*y) = 
+	# (dx)*y where * is the convolution and d(x) is the derivative of x
 	image = first_derivative_x*gaussian_y
 	image = np.reshape(image, [kernel_length, kernel_length])
 	return image
@@ -86,9 +89,23 @@ def gaussian_second_derivative(scale, rotated_points, kernel_length):
 	gaussian_x = (1/np.sqrt(2*np.pi*var_x))*(np.exp((-1*(x-mean)**2)/(2*var_x)))
 	gaussian_y = (1/np.sqrt(2*np.pi*var_y))*(np.exp((-1*(y-mean)**2)/(2*var_y)))
 	second_derivative_x = gaussian_x*(((x-mean)**2 - var_x)/(var_x**2))
+	# Gaussian can be denoted using the convolution of gaussian in x with 
+	# gaussian in y. Thus, using theory of convolution here d(d(x*y)) = 
+	# (d2x)*y where * is the convolution and d(x) is the derivative of x
 	image = second_derivative_x*gaussian_y
 	image = np.reshape(image, [kernel_length, kernel_length])
 	return image
+
+def gaussian2D_lm(x, y, scale):
+	var = scale**2
+	gaussian = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var))
+	return gaussian
+
+def laplace_gaussian2D(x, y, scale):
+	var = scale**2
+	gaussian = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var))
+	double_derivative_gaussian = gaussian*((x*x + y*y) - var)/(var**2)
+	return double_derivative_gaussian
 
 def generate_lm_filter(number_orientations, scales, kernel_length=49):
 	
@@ -113,6 +130,14 @@ def generate_lm_filter(number_orientations, scales, kernel_length=49):
 											rotated_points, kernel_length)
 			count += 1
 
+	# Total images are 18 for 1st derivative and 18 for 2nd derivative => 36
+	count = 36
+	for scale in scales:
+		lm_filter_bank[:, :, count] = gaussian2D_lm(np.array(x), np.array(y), scale)
+		lm_filter_bank[:, :, 4 + count] = laplace_gaussian2D(np.array(x), np.array(y), scale)
+		lm_filter_bank[:, :, 8 + count] = laplace_gaussian2D(np.array(x), np.array(y), 3*scale)
+		count += 1
+
 	return lm_filter_bank
 	
 
@@ -128,8 +153,8 @@ def draw_dog_filters(dog_filter_bank, number_orientations, number_scales):
 	plt.close()
 
 def draw_lm_filter(lm_filter_bank, number_orientations, number_scales):
-	for i in range(0,36):
-		plt.subplot(6,6,i+1)
+	for i in range(0,48):
+		plt.subplot(4,12,i+1)
 		plt.axis('off')
 		plt.imshow(lm_filter_bank[:,:,i], cmap='gray')
 	plt.savefig('./lm_filter.png')
