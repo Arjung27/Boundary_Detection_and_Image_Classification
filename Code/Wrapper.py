@@ -7,13 +7,10 @@ Homework 0: Alohomora: Phase 1 Starter Code
 
 
 Author(s): 
-Nitin J. Sanket (nitin@terpmail.umd.edu)
-PhD Candidate in Computer Science,
+Arjun Gupta
+M.Eng. in Robotics,
 University of Maryland, College Park
 
-Chahat Deep Singh (chahat@terpmail.umd.edu) 
-PhD Student in Computer Science,
-University of Maryland, College Park
 """
 
 # Code starts here:
@@ -24,30 +21,19 @@ import skimage.transform
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import scipy.stats as st
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+import filter_util
 
-def gaussian2D(nsig=9, kernel_length=25):
-	"""Generates the 2D gaussian kernel"""
-	# We take kernel_length+1 because we lose one value when we use np.diff()
-	x = np.linspace(-nsig, nsig, kernel_length+1)
-	# Cumulative normal distribution function
-	kernel1 = np.sqrt(1/(2*np.pi*nsig))*np.exp(-0.5*(x**2)/nsig) #st.norm.cdf(x)
-	fig = plt.figure()
-	plt.plot(kernel1)
-	plt.savefig('./DoG_filters/kernel.png')
-	# out[i] = a[i+1] - a[i]
-	# kernel1 = np.diff(kernel1)
-	# Calculate outer product
-	kernel2 = np.outer(kernel1, kernel1)
-	# Dividing by the sum to normalize the kernel
-	return kernel2/kernel2.sum()
 
 def generate_dog_filters(number_orientations, scales, kernel_length=25):
 	""" Return an array of DoG filters"""
 	orientations = np.linspace(0,360,number_orientations+1)
 	dog_kernels = []
 	for vals in scales:
-		gaussian_kernel = gaussian2D(vals, kernel_length)
+		gaussian_kernel = filter_util.gaussian2D(vals, kernel_length)
 		border_type = cv2.borderInterpolate(0, 1, cv2.BORDER_REFLECT)
 		sobel_on_gaussian = cv2.Sobel(gaussian_kernel, cv2.CV_64F, 1, 0, \
 													borderType=border_type)
@@ -61,51 +47,6 @@ def generate_dog_filters(number_orientations, scales, kernel_length=25):
 				sobel_on_gaussian.shape[1::-1], flags=cv2.INTER_CUBIC))
 
 	return dog_kernels
-
-def gaussian_first_derivative(scale, rotated_points, kernel_length):
-
-	var_x = scale**2
-	var_y = (3*scale)**2
-	mean = 0
-	x = rotated_points[0,:]
-	y = rotated_points[1,:]
-	gaussian_x = (1/np.sqrt(2*np.pi*var_x))*(np.exp((-1*(x-mean)**2)/(2*var_x)))
-	gaussian_y = (1/np.sqrt(2*np.pi*var_y))*(np.exp((-1*(y-mean)**2)/(2*var_y)))
-	first_derivative_x = -gaussian_x*((x-mean)/(var_x))
-	# Gaussian can be denoted using the convolution of gaussian in x with 
-	# gaussian in y. Thus, using theory of convolution here d(x*y) = 
-	# (dx)*y where * is the convolution and d(x) is the derivative of x
-	image = first_derivative_x*gaussian_y
-	image = np.reshape(image, [kernel_length, kernel_length])
-	return image
-
-def gaussian_second_derivative(scale, rotated_points, kernel_length):
-
-	var_x = scale**2
-	var_y = (3*scale)**2
-	mean = 0
-	x = rotated_points[0,:]
-	y = rotated_points[1,:]
-	gaussian_x = (1/np.sqrt(2*np.pi*var_x))*(np.exp((-1*(x-mean)**2)/(2*var_x)))
-	gaussian_y = (1/np.sqrt(2*np.pi*var_y))*(np.exp((-1*(y-mean)**2)/(2*var_y)))
-	second_derivative_x = gaussian_x*(((x-mean)**2 - var_x)/(var_x**2))
-	# Gaussian can be denoted using the convolution of gaussian in x with 
-	# gaussian in y. Thus, using theory of convolution here d(d(x*y)) = 
-	# (d2x)*y where * is the convolution and d(x) is the derivative of x
-	image = second_derivative_x*gaussian_y
-	image = np.reshape(image, [kernel_length, kernel_length])
-	return image
-
-def gaussian2D_lm(x, y, scale):
-	var = scale**2
-	gaussian = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var))
-	return gaussian
-
-def laplace_gaussian2D(x, y, scale):
-	var = scale**2
-	gaussian = (1/np.sqrt(2*np.pi*var))*np.exp( -(x*x + y*y) / (2*var))
-	double_derivative_gaussian = gaussian*((x*x + y*y) - var)/(var**2)
-	return double_derivative_gaussian
 
 def generate_lm_filter(number_orientations, scales, kernel_length=49):
 	
@@ -124,24 +65,39 @@ def generate_lm_filter(number_orientations, scales, kernel_length=49):
 			rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)], \
 										[np.sin(angle), np.cos(angle)]])
 			rotated_points = np.dot(rotation_matrix, points)
-			lm_filter_bank[:,:,count] = gaussian_first_derivative(scale, \
+			lm_filter_bank[:,:,count] = filter_util.gaussian_first_derivative(scale, \
 											rotated_points, kernel_length)
-			lm_filter_bank[:,:,count + 18] = gaussian_second_derivative(scale, \
+			lm_filter_bank[:,:,count + 18] = filter_util.gaussian_second_derivative(scale, \
 											rotated_points, kernel_length)
 			count += 1
 
 	# Total images are 18 for 1st derivative and 18 for 2nd derivative => 36
 	count = 36
 	for scale in scales:
-		lm_filter_bank[:, :, count] = gaussian2D_lm(np.array(x), np.array(y), scale)
-		lm_filter_bank[:, :, 4 + count] = laplace_gaussian2D(np.array(x), np.array(y), scale)
-		lm_filter_bank[:, :, 8 + count] = laplace_gaussian2D(np.array(x), np.array(y), 3*scale)
+		lm_filter_bank[:, :, count] = filter_util.gaussian2D_lm(np.array(x), np.array(y), scale)
+		lm_filter_bank[:, :, 4 + count] = filter_util.laplace_gaussian2D(np.array(x), np.array(y), scale)
+		lm_filter_bank[:, :, 8 + count] = filter_util.laplace_gaussian2D(np.array(x), np.array(y), 3*scale)
 		count += 1
 
 	return lm_filter_bank
-	
 
-def draw_dog_filters(dog_filter_bank, number_orientations, number_scales):
+
+def generate_gabor_filters(scales, theta, Lambda, psi, gamma, number_filters):
+
+	gabor_filter_bank = []
+	for scale in scales:
+		gabor = filter_util.gabor_filters_fn(scale, theta, Lambda, psi, gamma)
+		angle = np.linspace(0, 360, number_filters + 1)
+		for i, ang in enumerate(angle[:-1]) :
+			image_center = tuple(np.array(gabor.shape[1::-1])/2)
+			rot_mat = cv2.getRotationMatrix2D(image_center, ang, 1.0)
+			gabor_filter_bank.append(cv2.warpAffine(gabor, rot_mat, \
+				gabor.shape[1::-1], flags=cv2.INTER_CUBIC))
+
+	return gabor_filter_bank
+
+def draw_dog_filters(dog_filter_bank, number_orientations, number_scales, filename="DoG_filters"):
+
 	alpha = 2 # Should be a perfect divisor of number_orietations
 	fig, axs = plt.subplots(int(alpha*number_scales), int(number_orientations/alpha), figsize=(20,20))
 	for i in range(len(dog_filter_bank)):
@@ -149,15 +105,26 @@ def draw_dog_filters(dog_filter_bank, number_orientations, number_scales):
 		plt.subplot(int(alpha*number_scales), int(number_orientations/alpha), i+1)
 		plt.axis('off')
 		plt.imshow(dog_filter_bank[i], cmap='gray')
-	plt.savefig('./DoG_filters/image.png')
+	plt.savefig('./DoG_filters/'+filename+'.png')
 	plt.close()
 
-def draw_lm_filter(lm_filter_bank, number_orientations, number_scales):
+def draw_lm_filter(lm_filter_bank, number_orientations, number_scales, filename):
+
 	for i in range(0,48):
 		plt.subplot(4,12,i+1)
 		plt.axis('off')
 		plt.imshow(lm_filter_bank[:,:,i], cmap='gray')
-	plt.savefig('./lm_filter.png')
+	plt.savefig('./lm_filter/'+filename+'.png')
+	plt.close()
+
+def draw_gabor_filter(gabor_filter_bank, rows, cols, filename):
+
+	for i in range(0, len(gabor_filter_bank)):
+		plt.subplot(rows, cols, i+1)
+		plt.axis('off')
+		plt.imshow(gabor_filter_bank[i], cmap='gray')
+	plt.savefig('./gabor_filter/'+filename+'.png')
+	plt.close()
 
 def main():
 
@@ -178,15 +145,26 @@ def main():
 	"""
 	scales = [1, np.sqrt(2), 2, 2*np.sqrt(2)]
 	number_orientations = 6
-	lm_filter_bank = generate_lm_filter(number_orientations, scales, 49)
-	draw_lm_filter(lm_filter_bank, number_orientations, len(scales))
+	lms_filter_bank = generate_lm_filter(number_orientations, scales, 49)
+	draw_lm_filter(lms_filter_bank, number_orientations, len(scales), "LMS")
+
+	scales = [np.sqrt(2)*1, np.sqrt(2)*np.sqrt(2), np.sqrt(2)*2, 2*np.sqrt(2)*np.sqrt(2)]
+	lml_filter_bank = generate_lm_filter(number_orientations, scales, 49)
+	draw_lm_filter(lml_filter_bank, number_orientations, len(scales), "LML")
 
 	"""
 	Generate Gabor Filter Bank: (Gabor)
 	Display all the filters in this filter bank and save image as Gabor.png,
 	use command "cv2.imwrite(...)"
 	"""
-
+	scales = [9, 16]
+	theta = np.pi/10
+	Lambda = 1
+	psi = 1
+	gamma = 1
+	number_filters = 15
+	gabor_filter_bank = generate_gabor_filters(scales, theta, Lambda, psi, gamma, number_filters)
+	draw_gabor_filter(gabor_filter_bank, rows=6, cols=5, filename="gabor")
 
 	"""
 	Generate Half-disk masks
