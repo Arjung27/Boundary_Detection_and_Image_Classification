@@ -12,6 +12,6 @@ For phase two we implemented total 5 deep neural networks. The code for these ne
 
 In order to run a particular model, one can follow the following steps:
 1. Open Train.py, modify the line from Network.Network import <Architecture_name> and then use that architeture name in line 163.
-2. Run pyton Train.py from terminal.
+2. Run python Train.py from terminal.
 
 Possible Architecture names are: CIFAR10Model, ResNet, DenseNet, ResNext.
