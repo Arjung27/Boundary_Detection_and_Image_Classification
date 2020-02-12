@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 
 """
-CMSC733 Spring 2019: Classical and Deep Learning Approaches for
-Geometric Computer Vision
-Homework 0: Alohomora: Phase 2 Starter Code
-
-
-Author(s):
+Author:
 Arjun Gupta
 M.Eng. Student in Robotics,
 University of Maryland, College Park
 """
-
 
 # Dependencies:
 # opencv, do (pip install opencv-python)
@@ -83,19 +77,6 @@ def ReadImages(ImageSize, DataPath):
         print('ERROR: Image I1 cannot be read')
         sys.exit()
         
-    ##########################################################################
-    # Add any standardization or cropping/resizing if used in Training here!
-    ##########################################################################
-
-    # I1S = iu.StandardizeInputs(np.float32(I1))
-
-    # I1Combined = np.expand_dims(I1S, axis=0)
-
-    # return I1Combined, I1
-    # lower_limit = 0
-    # upper_limit = 1
-    # I1 = (upper_limit - lower_limit) *(I1 - np.max(I1))/(np.max(I1) \
-    #                                                 - np.min(I1)) - upper_limit
     I1 = (I1-np.mean(I1))/255
     I1Combined = np.expand_dims(I1, axis=0)
 

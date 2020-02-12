@@ -1,14 +1,12 @@
+#!/usr/bin/env python
+
 """
-CMSC733 Spring 2019: Classical and Deep Learning Approaches for
-Geometric Computer Vision
-Homework 0: Alohomora: Phase 2 Starter Code
-
-
-Author(s):
-Nitin J. Sanket (nitinsan@terpmail.umd.edu)
-PhD Candidate in Computer Science,
+Author:
+Arjun Gupta
+M.Eng. Student in Robotics,
 University of Maryland, College Park
 """
+
 
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
@@ -39,9 +37,6 @@ def CIFAR10Model(Img, ImageSize, MiniBatchSize):
     prSoftMax - softmax output of the network
     """
 
-    #############################
-    # Fill your network here!
-    #############################
     net = Img;
     net = tf.layers.conv2d(net, 32, kernel_size=[5,5], padding="SAME", name='conv_layer1')
     net = tf.layers.batch_normalization(inputs = net,axis = -1, training=True, center=True, scale=True, name='layer_bn1')
@@ -178,9 +173,6 @@ def ResNet(Img, ImageSize, MiniBatchSize):
     prSoftMax - softmax output of the network
     """
 
-    #############################
-    # Fill your network here!
-    #############################
     net = Img
     net = tf.layers.conv2d(net, use_bias=False, filters=64, kernel_size=[7,7], padding='same', name='conv_layer1')
     net = tf.layers.batch_normalization(inputs=net, axis=-1, center=True, scale=True, training=True, name='batch_norm1')
@@ -243,9 +235,6 @@ def ResNext(Img, ImageSize, MiniBatchSize):
     prSoftMax - softmax output of the network
     """
 
-    #############################
-    # Fill your network here!
-    #############################
     net = Img
     net = tf.layers.conv2d(net, filters=16, name='conv_layer1', padding='same', kernel_size=[3,3], strides=1)
     net = tf.layers.batch_normalization(inputs=net, axis=-1, center=True, \

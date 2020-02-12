@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
 """
-CMSC733 Spring 2019: Classical and Deep Learning Approaches for
-Geometric Computer Vision
-Homework 0: Alohomora: Phase 2 Starter Code
-
-
-Author(s):
+Author:
 Arjun Gupta
 M.Eng. Student in Robotics,
 University of Maryland, College Park
@@ -100,9 +95,6 @@ def GenerateBatch(BasePath, DirNamesTrain, TrainLabels, ImageSize, MiniBatchSize
         RandImageName = BasePath + os.sep + DirNamesTrain[RandIdx] + '.png'
         ImageNum += 1
         
-        ##########################################################
-        # Add any standardization or data augmentation here!
-        ##########################################################
         lower_limit = 0
         upper_limit = 1
         I1 = np.float32(cv2.imread(RandImageName))
@@ -112,11 +104,6 @@ def GenerateBatch(BasePath, DirNamesTrain, TrainLabels, ImageSize, MiniBatchSize
         # Append All Images and Mask
         I1Batch.append(I1)
         LabelBatch.append(Label)
-
-    # I1Batch = random_flip(I1Batch)
-    # I1Batch = random_brightness(I1Batch)
-    # I1Batch = random_flip_up_down(I1Batch)
-    # I1Batch = image_rot90(I1Batch)
         
     return I1Batch, LabelBatch
 
@@ -166,9 +153,7 @@ def TrainOperation(ImgPH, LabelPH, DirNamesTrain, TrainLabels, NumTrainSamples, 
     tf.summary.scalar('bn_decay', bn_decay)
 
     with tf.name_scope('Loss'):
-        ###############################################
-        # Fill your loss function of choice here!
-        ###############################################
+        
         loss = tf.nn.softmax_cross_entropy_with_logits(labels = LabelPH, logits = prLogits)
         loss = tf.reduce_mean(loss)
 
@@ -178,9 +163,7 @@ def TrainOperation(ImgPH, LabelPH, DirNamesTrain, TrainLabels, NumTrainSamples, 
         Acc = tf.reduce_mean(tf.cast(tf.math.equal(prSoftMaxDecoded, LabelDecoded), dtype=tf.float32))
         
     with tf.name_scope('Adam'):
-        ###############################################
-        # Fill your optimizer of choice here!
-        ###############################################
+        
         learning_rate = get_learning_rate(batch, 0.001, MiniBatchSize)
         tf.summary.scalar('learning_rate', learning_rate)
         Optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999)
@@ -219,14 +202,6 @@ def TrainOperation(ImgPH, LabelPH, DirNamesTrain, TrainLabels, NumTrainSamples, 
                 FeedDict = {ImgPH: I1Batch, LabelPH: LabelBatch}
                 _, LossThisBatch, Summary, accuracyBatch = sess.run([Optimizer, loss, MergedSummaryOP, Acc], feed_dict=FeedDict)
                 
-                # Save checkpoint every some SaveCheckPoint's iterations
-                # if PerEpochCounter % SaveCheckPoint == 0:
-                #     # Save the Model learnt in this epoch
-                #     SaveName =  CheckPointPath + str(Epochs) + 'a' + str(PerEpochCounter) + 'model.ckpt'
-                #     Saver.save(sess,  save_path=SaveName)
-                #     print('\n' + SaveName + ' Model Saved...')
-
-                # accuracyBatch = sess.run(Acc, feed_dict=FeedDict)
                 accuracy.append(accuracyBatch)
                 total_loss.append(LossThisBatch)
                 # Tensorboard
